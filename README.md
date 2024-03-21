@@ -4,11 +4,11 @@ This repo contains the code and instructions on how to reproduce the results of 
 
 ### Requirements
 
-As our code heavily relies on AVX512 instructions, you need an AVX512-capable machine to run this code. 
+As our code heavily relies on AVX512 instructions, to run it you need a CPU with available AVX512 instructions. 
 
 ### Installation
 
-- Make sure to have the Math Kernel Library ( [MKL](https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl.html#gs.5pn8i4) ) installed on your machine and set the ```MKLROOT``` env variable to point to the installation directory.
+- Make sure to have the Math Kernel Library ([MKL](https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl.html#gs.5pn8i4)) installed on your machine and set the ```MKLROOT``` env variable to point to the installation directory.
 
 - Clone the repo using the ```--recursive``` flag.
 - Run 
@@ -42,7 +42,7 @@ We provide the parameters configurations to reproduce the results of Table 1 and
 
 The indexes can be downloaded here [here](http://hpc.isti.cnr.it/~rulli/emvb-ecir2024/). They have the following name pattern ```{n_centroids}k_{M}_m_{dataset}_{compression_mod}.tar.gz```
 
-### Extend results on different collections
+### Extend Results on Different Collections
 
 To run our index on your collection, you need to provide the ```doclens``` file, the ```query_ids``` file, and the ```index``` directory. 
 
