@@ -63,7 +63,7 @@ The source code in this repository is subject to the following citation license:
 
 By downloading and using this software, you agree to cite the undernoted paper in any kind of material you produce where it was used to conduct search or experimentation, whether be it a research paper, dissertation, article, poster, presentation, or documentation. By using this software, you have agreed to the citation licence.
 
-[Efficient Multi-vector Dense Retrieval with Bit Vectors][https://link.springer.com/chapter/10.1007/978-3-031-56060-6_1]
+[Efficient Multi-vector Dense Retrieval with Bit Vectors](https://link.springer.com/chapter/10.1007/978-3-031-56060-6_1)
 
 ```
 @inproceedings{emvb_ecir2024,
