@@ -1,0 +1,9 @@
+[submodule "external/faiss"]
+	path = external/faiss
+	url = https://github.com/CosimoRulli/faiss
+[submodule "external/cnpy"]
+	path = external/cnpy
+	url = https://github.com/rogersce/cnpy.git
+[submodule "external/cmd_line_parser"]
+	path = external/cmd_line_parser
+	url = https://github.com/jermp/cmd_line_parser.git

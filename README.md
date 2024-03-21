@@ -1,8 +1,10 @@
 # EMVB - Efficient Multi-Vector Retireval with Bit Vectors
 
-This repo contains the code for the ECIR 2024 paper Nardini, Franco Maria, Cosimo Rulli, and Rossano Venturini. "Efficient Multi-vector Dense Retrieval with Bit Vectors." European Conference on Information Retrieval. Cham: Springer Nature Switzerland, 2024..
+This repo contains the code for the ECIR 2024 paper Nardini, Franco Maria, Cosimo Rulli, and Rossano Venturini. "Efficient Multi-vector Dense Retrieval with Bit Vectors." European Conference on Information Retrieval.  2024..
 
+### Requirements
 
+As our code heavy relies on AVX512 instructions, you need an AVX512-capable machine to run this code. 
 
 ### Installation
 
@@ -33,14 +35,14 @@ This repo contains the code for the ECIR 2024 paper Nardini, Franco Maria, Cosim
 
 
 
-### Reproducing Results
+### Reproducing Paper Results
 
 Make sure to execute ```export OMP_NUM_THREADS=1``` before running a script, otherwise ```faiss``` and ```MKL``` may run in multithread mode. In this case, intra-query parallelism is not advantageous compared to single-thread execution. In case one wants to parallelize, it would be worthed to parallelize over the queries. 
 
 
-We provide the parameters configurations to reproduce the results of Table 1 and Table 2 in the scripts ```results_msmarco.sh``` and ```results_lotte.sh```. Modify the script to provide the path to your qrels (for MSMARCO) and your indexes. The script to compute the metrics are taken from the ColBERT original repo. 
+We provide the parameters configurations to reproduce the results of Table 1 and Table 2 in the scripts ```results_msmarco.sh``` and ```results_lotte.sh```. Modify the script to provide the path to the downloaded indexes. The scripts to compute the metrics are taken from the ColBERT original repo. 
 
-The indexes can be downloaded here (TODO).
+The indexes can be downloaded here [here](http://hpc.isti.cnr.it/~rulli/emvb-ecir2024/). They have the following name pattern ```{n_centroids}k_{M}_m_{dataset}_{compression_mod}.tar.gz```
 
 
 #### Extend results on different collections
@@ -57,4 +59,4 @@ The ```index``` directory contains the following fields.
 - ```residuals.npy```. A numpy file containing the codes of the PQ-encoded vectors. 
 
 
-We provide a notebook to convert a faiss IVFPQ index into the required format. 
+We will provide soon the scripts to build and convert indexes on a custom collection.  
