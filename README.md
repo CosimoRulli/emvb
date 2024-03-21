@@ -60,3 +60,15 @@ The ```index``` directory contains the following fields.
 
 
 We will provide soon the scripts to build and convert indexes on a custom collection.  
+
+If you use or find this code useful anyhow, feel free to cite 
+```
+@inproceedings{nardini2024efficient,
+  title={Efficient Multi-vector Dense Retrieval with Bit Vectors},
+  author={Nardini, Franco Maria and Rulli, Cosimo and Venturini, Rossano},
+  booktitle={European Conference on Information Retrieval},
+  pages={3--17},
+  year={2024},
+  organization={Springer}
+}
+```
