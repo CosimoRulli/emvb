@@ -92,7 +92,7 @@ int main(int argc, char **argv)
     // uint64_t time_document_filtering = 0;
 
     cout << "SEARCH STARTED\n";
-    for (int query_id = 0; query_id < n_queries; query_id++)
+    for (size_t query_id = 0; query_id < n_queries; query_id++)
     {
         auto start = chrono::high_resolution_clock::now();
         globalIdxType q_start = query_id * values_per_query;

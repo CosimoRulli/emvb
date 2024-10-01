@@ -1,6 +1,6 @@
 
 qrels_file="aux_data/lotte/queries_ids_lotte.tsv"
-index_path="/data2/cosimorulli/EMVB/indexes/260k_m32_LOTTE_OPQ"
+index_path=""
 
 
 # k = 10

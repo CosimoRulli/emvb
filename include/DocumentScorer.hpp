@@ -19,6 +19,30 @@ using namespace cnpy;
 
 const uint32_t BUFFER_SIZE = 50000;
 
+// Select the correct function at compile time
+#if defined(__AVX512F__)  // AVX-512 is supported
+    #define filter_if_optimal filter_if_avx512
+#else  // Use the scalar version if no AVX-512 support
+    #define filter_if_optimal filter_if
+#endif
+
+
+// Select the correct function at compile time
+#if defined(__AVX512F__)  // AVX-512 is supported
+    #define compute_score_by_column_reduction_optimal compute_score_by_column_reduction
+#else  // Use the scalar version if no AVX-512 support
+    #define compute_score_by_column_reduction_optimal compute_score_by_column_reduction_scalar
+#endif
+
+
+#if defined(__AVX512F__)  // AVX-512 is supported
+    #define filter_centroids_in_scoring_optimal filter_centroids_in_scoring
+#else  // Use the scalar version if no AVX-512 support
+    #define filter_centroids_in_scoring_optimal filter_centroids_in_scoring_scalar
+#endif
+
+
+
 class DocumentScorer
 {
 private:
@@ -151,6 +175,27 @@ public:
         return current_scores;
     }
 
+
+    size_t *filter_if(const float th, const size_t i)
+    {
+        size_t *sorted_indexes = start_sorted;
+        size_t idx = 0;
+        for (size_t j = 0; j < n_centroids; j++)
+        {
+            // Access the current value
+            float current_value = centroids_scores[i * n_centroids + j];
+            
+            // Compare it to the threshold
+            if (current_value > th)
+            {
+                sorted_indexes[idx] = j;
+                idx++;
+            }
+        }
+        return sorted_indexes + idx;
+    }
+
+
     size_t *filter_if_avx512(const float th, const size_t i)
     {
 
@@ -189,12 +234,12 @@ public:
         vector<size_t> closest_centroids_ids;
         closest_centroids_ids.reserve(nprobe * M);
 
-        for (size_t i = 0; i < M; i++)
+        for (int i = 0; i < M; i++)
         {
             size_t current_n_probe = nprobe;
 
             // auto sorted_indexes = filter_branchless_avx512(th, i);
-            auto sorted_indexes = filter_if_avx512(th, i);
+            auto sorted_indexes = filter_if_optimal(th, i);
             // auto sorted_indexes = filter_branchless(th, i);
 
             assign_bitvector_32(start_sorted, sorted_indexes - start_sorted, i, this->bitvectors);
@@ -202,7 +247,7 @@ public:
             if (sorted_indexes - start_sorted >= nprobe)
             {
                 vector<float> candidate_centroids_scores;
-                for (size_t j = 0; j < sorted_indexes - start_sorted; j++)
+                for (int j = 0; j < sorted_indexes - start_sorted; j++)
 
                 {
                     candidate_centroids_scores.push_back(centroids_scores[i * n_centroids + start_sorted[j]]);
@@ -290,7 +335,7 @@ public:
 
             vector<size_t> centroid_ids(doclen);
             uint32_t mask = 0;
-            for (size_t i = 0; i < doclen; i++)
+            for (int i = 0; i < doclen; i++)
             {
                 centroid_ids[i] = centroids_assignments[doc_offset + i];
                 auto cid = centroids_assignments[doc_offset + i];
@@ -323,16 +368,16 @@ public:
         auto doclen = all_doclens[doc_id];
         auto doc_offset = doc_offsets[doc_id];
         vector<size_t> centroid_ids(doclen);
-        for (size_t i = 0; i < doclen; i++)
+        for (int i = 0; i < doclen; i++)
         {
             centroid_ids[i] = centroids_assignments[i + doc_offset];
         }
 
         vector<float> centroid_distances(M * doclen);
-        for (size_t j = 0; j < doclen; j++)
+        for (int j = 0; j < doclen; j++)
         {
             size_t centroid_id = centroid_ids[j];
-            for (size_t i = 0; i < M; i++)
+            for (int i = 0; i < M; i++)
             {
                 // writing transposed
                 centroid_distances[j * M + i] = centroids_scores_transposed[centroid_id * M + i];
@@ -379,6 +424,35 @@ public:
         return _mm512_reduce_add_ps(half_sum);
     }
 
+
+    inline float compute_score_by_column_reduction_scalar(const std::vector<float> &centroid_distances, const size_t doclen, const size_t M)
+    {
+        // Initialize maxs0 and maxs1 using the first two chunks of 16 values each.
+        std::vector<float> maxs0(16), maxs1(16);
+        for (size_t j = 0; j < 16; j++) {
+            maxs0[j] = centroid_distances[j];
+            maxs1[j] = centroid_distances[16 + j];
+        }
+
+        // Process remaining rows
+        for (size_t i = 1; i < doclen; i++)
+        {
+            for (size_t j = 0; j < 16; j++) {
+                // Compare each value and store the max in maxs0 and maxs1
+                maxs0[j] = std::max(maxs0[j], centroid_distances[i * M + j]);
+                maxs1[j] = std::max(maxs1[j], centroid_distances[i * M + 16 + j]);
+            }
+        }
+
+        // Add corresponding elements in maxs0 and maxs1
+        float sum = 0.0f;
+        for (size_t j = 0; j < 16; j++) {
+            sum += maxs0[j] + maxs1[j];
+        }
+
+        return sum;
+    }
+
     vector<numDocsType> second_stage_filtering(const float *queries_data, const globalIdxType q_start, const vector<numDocsType> &doc_ids, const size_t n_documents)
     {
         transpose_centroids_scores_mkl_oplace();
@@ -390,11 +464,11 @@ public:
 
             auto doc_id = doc_ids[doc_idx];
             auto doclen = all_doclens[doc_id];
-            auto doc_offset = doc_offsets[doc_id];
+            //auto doc_offset = doc_offsets[doc_id];
 
             auto centroid_distances = compute_ip_with_centroids(queries_data + q_start, doc_id);
 
-            auto score = compute_score_by_column_reduction(centroid_distances, doclen, M);
+            auto score = compute_score_by_column_reduction_optimal(centroid_distances, doclen, M);
             // TODO: here, replace with heap (Maybe)
 
             if (min_heap.size() < n_documents)
@@ -452,16 +526,16 @@ public:
             vector<float> distances(M * doclen);
             vector<float> maxs(M);
 
-            for (size_t i = 0; i < M; i++)
+            for (int i = 0; i < M; i++)
             {
-                for (size_t j = 0; j < doclen; j++)
+                for (int j = 0; j < doclen; j++)
                 {
                     // distances[i * doclen + j] = centroid_distances[i * doclen + j] + pq_distances[i * doclen + j];
                     distances[i * doclen + j] = centroid_distances[j * M + i] + pq_distances[i * doclen + j];
                 }
             }
 
-            for (size_t i = 0; i < M; i++)
+            for (int i = 0; i < M; i++)
             {
                 maxs[i] = *std::max_element(&distances[i * doclen], &distances[(i + 1) * doclen]);
             }
@@ -505,16 +579,16 @@ public:
             vector<float> distances(M * doclen);
             vector<float> maxs(M);
 
-            for (size_t i = 0; i < M; i++)
+            for (int i = 0; i < M; i++)
             {
-                for (size_t j = 0; j < doclen; j++)
+                for (int j = 0; j < doclen; j++)
                 {
                     // distances[i * doclen + j] = centroid_distances[i * doclen + j] + pq_distances[i * doclen + j];
                     distances[i * doclen + j] = centroid_distances[j * M + i] + pq_distances[i * doclen + j];
                 }
             }
 
-            for (size_t i = 0; i < M; i++)
+            for (int i = 0; i < M; i++)
             {
                 maxs[i] = *std::max_element(&distances[i * doclen], &distances[(i + 1) * doclen]);
             }
@@ -568,6 +642,22 @@ public:
         return current_buffer;
     }
 
+    inline int *filter_centroids_in_scoring_scalar(const float th, const float *current_centroid_scores, const size_t doclen)
+    {
+        int *current_buffer = this->buffer_centroids;
+
+        for (size_t j = 0; j < doclen; j++)
+        {
+            if (current_centroid_scores[j] > th)
+            {
+                *current_buffer = GLOBAL_INDEXES[j];
+                current_buffer++;
+            }
+        }
+
+        return current_buffer;
+    }
+
     vector<tuple<size_t, float>> compute_topk_documents_selected(const float *queries_data, const globalIdxType q_start, const vector<numDocsType> &doc_ids, const size_t k, const float th)
     {
         auto heap = HeapFloats(k);
@@ -587,21 +677,21 @@ public:
             vector<float> distances(M * doclen);
             vector<float> maxs(M);
 
-            for (size_t i = 0; i < M; i++)
+            for (int i = 0; i < M; i++)
             {
-                for (size_t j = 0; j < doclen; j++)
+                for (int j = 0; j < doclen; j++)
                 {
                     distances[i * doclen + j] = centroid_distances[j * M + i];
                 }
 
-                auto current_indexes = filter_centroids_in_scoring(th, &distances[i * doclen], doclen);
+                auto current_indexes = filter_centroids_in_scoring_optimal(th, &distances[i * doclen], doclen);
 
                 if (current_indexes == this->buffer_centroids)
                 {
                     this->globalCounter+= doclen;
                     pq.compute_distances_one_qt(doc_offset, doclen, i, buffer_for_distances);
 
-                    for (size_t j = 0; j < doclen; j++)
+                    for (int j = 0; j < doclen; j++)
                     {
                         distances[i * doclen + j] += buffer_for_distances[j];
                         // cout<< buffer_for_distances[j] << " "<< pq_distances[i * doclen + j] << "\n";
@@ -619,7 +709,7 @@ public:
                     // TODO: Here, compute only necessary terms
                     //  Probably, we should first compute all the dot product with the codes and then add them to distances
                     //  to avoid the distance table to be pop out of the cache
-                    for (size_t idx = 0; idx < (current_indexes - this->buffer_centroids); idx++)
+                    for (int idx = 0; idx < (int)(current_indexes - this->buffer_centroids); idx++)
                     {
                         auto j = this->buffer_centroids[idx];
                         // distances[i * doclen + j] += pq_distances[i * doclen + j];
