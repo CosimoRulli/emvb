@@ -55,7 +55,8 @@ The ```index``` directory contains the following fields.
 - ```query_embeddings.npy```. A numpy file containing the representation of queries. 
 - ```residuals.npy```. A numpy file containing the codes of the PQ-encoded vectors. 
 
-We will provide soon the scripts to build and convert indexes on a custom collection.  
+
+The script ```ConvertFaissIndex.ipynb``` contains some instruction to prepare the data in order to run EMVB on a different collection. 
 
 ### Citation License
 
