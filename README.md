@@ -4,7 +4,7 @@ This repo contains the code and instructions on how to reproduce the results of 
 
 ### Requirements
 
-As our code heavily relies on AVX512 instructions, to run it you need a CPU with available AVX512 instructions. 
+As our code heavily relies on AVX512 instructions, to run it you need a CPU with available AVX512 instructions. The current version of the code still compiles without these instructions, yet the retrieval time may increase significantly. 
 
 ### Installation
 
