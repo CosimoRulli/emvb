@@ -1,10 +1,10 @@
 # Efficient Multi-Vector Retrieval with Bit Vectors (EMVB)
 
-This repo contains the code and instructions on how to reproduce the results of the ECIR 2024 paper: Franco Maria Nardini, Cosimo Rulli, Rossano Venturini. "Efficient Multi-vector Dense Retrieval with Bit Vectors." European Conference on Information Retrieval. 2024.
+This repo contains the code and instructions on how to reproduce the results of the ECIR 2024 paper: Franco Maria Nardini, Cosimo Rulli, Rossano Venturini. *"Efficient Multi-vector Dense Retrieval with Bit Vectors"*, European Conference on Information Retrieval, 2024.
 
 ### Requirements
 
-As our code heavily relies on AVX512 instructions, to run it you need a CPU with available AVX512 instructions. The current version of the code still compiles without these instructions, yet the retrieval time may increase significantly. 
+As our code heavily relies on AVX512 instructions, to run it, you need a CPU with available AVX512 instructions. The current version of the code still compiles without these instructions, yet the retrieval time may increase significantly. 
 
 ### Installation
 
